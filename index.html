@@ -502,6 +502,9 @@
   .ic-mini img { width: 100%; height: 100%; object-fit: cover; }
   .ic-mini svg { width: 26px; height: 26px; }
   .app-row .img-change { padding: 5px 10px; font-size: 12px; white-space: nowrap; }
+  /* 編集画面を開いているときは、本体を左に寄せて後ろの内容を見えるようにする */
+  body { transition: margin-right .3s ease; }
+  body.pane-open { margin-right: 340px; }
   .scroll .thumb-bar { position: absolute; top: 0; left: 0; width: 6px; height: 150px; background: #aaa; border-radius: 3px; }
 
   /* ポップアップ */
@@ -2757,6 +2760,11 @@
   });
   renderApps();
   renderAppEditor();
+
+  /* 設定画面の開閉に合わせて、本体の幅を調整 */
+  new MutationObserver(() => {
+    document.body.classList.toggle('pane-open', pane.classList.contains('open'));
+  }).observe(pane, { attributes: true, attributeFilter: ['class'] });
 
   /* 3件を並べる */
   for (let i = 0; i < 3; i++) {
