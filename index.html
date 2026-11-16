@@ -493,6 +493,15 @@
   .wip-ok:hover { transform: translateY(-1px); }
   .wip-ok:active { transform: translateY(2px); box-shadow: 0 2px 0 #2a7d52; }
   .wip-ok:focus-visible { outline: 3px solid #ff9800; outline-offset: 3px; }
+  /* 申請・学習のタブとアプリ（編集対応） */
+  .ic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ic-empty { font-size: 22px; color: #9aa3ad; line-height: 1; }
+  .app-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .app-row input[type="text"] { flex: 1; min-width: 0; }
+  .ic-mini { width: 34px; height: 34px; flex-shrink: 0; border: 1px solid #e0e0e0; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .ic-mini img { width: 100%; height: 100%; object-fit: cover; }
+  .ic-mini svg { width: 26px; height: 26px; }
+  .app-row .img-change { padding: 5px 10px; font-size: 12px; white-space: nowrap; }
   .scroll .thumb-bar { position: absolute; top: 0; left: 0; width: 6px; height: 150px; background: #aaa; border-radius: 3px; }
 
   /* ポップアップ */
@@ -816,25 +825,10 @@
     </div>
 
     <aside class="side">
-      <div class="tabs" role="tablist">
-        <button class="tab active" type="button" role="tab" data-tab="apply" aria-selected="true">申請</button>
-        <button class="tab" type="button" role="tab" data-tab="learn" aria-selected="false">学習</button>
-      </div>
+      <div class="tabs" id="appTabs" role="tablist"></div>
       <div class="apps-wrap wp" id="appsWp">
         <button class="wp-edit" type="button" aria-label="申請・学習を編集"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>
-        <div class="apps" id="panel-apply" role="tabpanel">
-          <div class="app"><div class="ic"><svg width="36" height="36" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 2 L24 8 L24 20 L14 26 L4 20 L4 8 Z" fill="none" stroke="#1a6fc4" stroke-width="4" stroke-linejoin="round"/></svg></div>CYBER XEED</div>
-          <div class="app"><div class="ic"><span class="pill-logo" style="background:#1f9d55">HR</span></div>HR Brain</div>
-          <div class="app"><div class="ic"><span class="word-logo" style="color:#1d3f7a">Bill One</span></div>Bill One</div>
-          <div class="app"><div class="ic"><span class="word-logo" style="color:#e0601a;font-style:italic;font-size:17px">OBiC7</span></div>OBiC7</div>
-          <div class="app"><div class="ic"><span class="word-logo" style="color:#1a6fc4;font-size:17px">Air</span></div>V Air</div>
-          <div class="app"><div class="ic"><span class="blue-tile">経費使用<br>承認書</span></div>経費使用承認書</div>
-        </div>
-        <div class="apps" id="panel-learn" role="tabpanel" hidden>
-          <div class="app"><div class="ic"><span class="red-tile">TOKI<br>WORDS<br>COLLECTION</span></div>東基単語集</div>
-          <div class="app"><div class="ic"><span class="blue-tile2">ビジネス<br>用語集</span></div>ビジネス用語</div>
-          <div class="app"><div class="ic"><span class="globe"></span></div>LEARNING...</div>
-        </div>
+        <div class="apps" id="appsGrid"></div>
       </div>
       <div class="ai-corner wp" id="aiWp">
         <button class="wp-edit" type="button" aria-label="生成AI新聞を編集"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>
@@ -1269,6 +1263,7 @@
           <label class="mode-opt"><input type="radio" name="ap-layout" value="square"> アイコン（正方形）</label>
           <label class="mode-opt"><input type="radio" name="ap-layout" value="wide"> 横長</label>
         </div>
+        <div id="appEditor"></div>
       </div>
       <div class="k-sg" id="sgFields"></div>
       <div class="k-biz" id="bizFields"></div>
@@ -1633,19 +1628,6 @@
     });
   });
 
-  /* 右サイドバー：申請／学習のタブ切り替え */
-  document.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(x => {
-        const on = x === t;
-        x.classList.toggle('active', on);
-        x.setAttribute('aria-selected', on ? 'true' : 'false');
-      });
-      document.getElementById('panel-apply').hidden = t.dataset.tab !== 'apply';
-      document.getElementById('panel-learn').hidden = t.dataset.tab !== 'learn';
-    });
-  });
-
   /* ===== 挨拶バナー（①リスト引用モード／②緊急モード） ===== */
   state.greeting = { mode: 'list', list: 'greet', col: 'メッセージ', body: '' };
   const SUN_ICON = "<svg width=\"26\" height=\"26\" viewBox=\"0 0 26 26\" aria-hidden=\"true\"><circle cx=\"13\" cy=\"13\" r=\"5\" fill=\"none\" stroke=\"#c87b1a\" stroke-width=\"1.6\"/><g stroke=\"#c87b1a\" stroke-width=\"1.6\" stroke-linecap=\"round\"><line x1=\"13\" y1=\"1.5\" x2=\"13\" y2=\"4\"/><line x1=\"13\" y1=\"22\" x2=\"13\" y2=\"24.5\"/><line x1=\"1.5\" y1=\"13\" x2=\"4\" y2=\"13\"/><line x1=\"22\" y1=\"13\" x2=\"24.5\" y2=\"13\"/><line x1=\"5\" y1=\"5\" x2=\"6.8\" y2=\"6.8\"/><line x1=\"19.2\" y1=\"19.2\" x2=\"21\" y2=\"21\"/><line x1=\"5\" y1=\"21\" x2=\"6.8\" y2=\"19.2\"/><line x1=\"19.2\" y1=\"6.8\" x2=\"21\" y2=\"5\"/></g></svg>";
@@ -1911,6 +1893,11 @@
     if (!f) return;
     const reader = new FileReader();
     reader.onload = () => {
+      if (fpTarget.startsWith('app:')) {
+        const parts = fpTarget.split(':');
+        applyAppIcon(Number(parts[1]), Number(parts[2]), reader.result, f.name);
+        return;
+      }
       if (fpTarget.startsWith('biz:')) {
         applyBizImage(Number(fpTarget.slice(4)), reader.result, f.name);
         return;
@@ -1982,43 +1969,53 @@
       '<div class="fo-item issue' + (fpSelected === sel ? ' sel' : '') + '" data-sel="' + sel + '">' + tileHtml + label + '</div>';
     if (fpPath === 'root') {
       c.innerHTML = FP_ROOT.map(name => {
-        const cls = name === '生成AI新聞' ? ' folder-ai' : (name === '業界お役立ちニュース' ? ' folder-biz' : '');
+        const cls = name === '生成AI新聞' ? ' folder-ai' : (name === '業界お役立ちニュース' ? ' folder-biz' : (name === 'ドキュメント' ? ' folder-doc' : ''));
         return '<div class="fo-item' + cls + '"><div class="fo"></div>' + name + '</div>';
       }).join('');
-      c.querySelectorAll('.folder-ai').forEach(el => el.addEventListener('click', () => {
-        fpPath = 'ai';
+      const go = (cls, path) => c.querySelectorAll(cls).forEach(el => el.addEventListener('click', () => {
+        fpPath = path;
         fpSelected = null;
         $('fpOk').disabled = true;
         renderFp();
       }));
-      c.querySelectorAll('.folder-biz').forEach(el => el.addEventListener('click', () => {
-        fpPath = 'biz';
-        fpSelected = null;
-        $('fpOk').disabled = true;
-        renderFp();
-      }));
+      go('.folder-ai', 'ai');
+      go('.folder-biz', 'biz');
+      go('.folder-doc', 'doc');
       return;
     }
-    let h = '<div class="fp-crumb" id="fpBack">‹ ときぽ ／ ' + (fpPath === 'ai' ? '生成AI新聞' : '業界お役立ちニュース') + '</div>';
-    if (fpPath === 'ai') {
+    const crumbs = { ai: '生成AI新聞', biz: '業界お役立ちニュース', doc: 'ドキュメント', logo: 'ドキュメント ／ ロゴ' };
+    let h = '<div class="fp-crumb" id="fpBack">‹ ときぽ ／ ' + crumbs[fpPath] + '</div>';
+    if (fpPath === 'doc') {
+      h += '<div class="fo-item folder-logo"><div class="fo"></div>ロゴ</div>';
+    } else if (fpPath === 'ai') {
       for (let n = 1; n <= 6; n++) {
         const tile = n === 6
           ? '<div class="issue-tile"><img src="' + ISSUE6 + '" alt=""></div>'
           : '<div class="issue-tile" style="background:' + ISSUE_COLORS[n - 1] + '">第' + n + '号</div>';
         h += selectable('a' + n, '生成AI新聞 第' + n + '号', tile);
       }
-    } else {
+    } else if (fpPath === 'biz') {
       for (let k = 1; k <= 4; k++) {
         h += selectable('b' + k, '業界お役立ち 画像' + k, '<div class="issue-tile"><img src="' + makeSampleImage(k) + '" alt=""></div>');
+      }
+    } else if (fpPath === 'logo') {
+      for (let k = 1; k <= 6; k++) {
+        h += selectable('l' + k, LOGO_NAMES[k - 1], '<div class="issue-tile"><img src="' + makeLogoImage(k) + '" alt=""></div>');
       }
     }
     c.innerHTML = h;
     $('fpBack').addEventListener('click', () => {
-      fpPath = 'root';
+      fpPath = fpPath === 'logo' ? 'doc' : 'root';
       fpSelected = null;
       $('fpOk').disabled = true;
       renderFp();
     });
+    c.querySelectorAll('.folder-logo').forEach(el => el.addEventListener('click', () => {
+      fpPath = 'logo';
+      fpSelected = null;
+      $('fpOk').disabled = true;
+      renderFp();
+    }));
     c.querySelectorAll('.issue').forEach(el => el.addEventListener('click', () => {
       fpSelected = el.dataset.sel;
       $('fpOk').disabled = false;
@@ -2033,9 +2030,18 @@
     if (kind === 'a') {
       src = num === 6 ? ISSUE6 : makeIssueImage(num);
       name = '生成AI新聞 第' + num + '号.jpg';
+    } else if (kind === 'l') {
+      src = makeLogoImage(num);
+      name = LOGO_NAMES[num - 1] + '.png';
     } else {
       src = makeSampleImage(num);
       name = '業界お役立ち 画像' + num + '.jpg';
+    }
+    if (fpTarget.startsWith('app:')) {
+      const parts = fpTarget.split(':');
+      applyAppIcon(Number(parts[1]), Number(parts[2]), src, name);
+      filePicker.hidden = true;
+      return;
     }
     if (fpTarget.startsWith('biz:')) {
       applyBizImage(Number(fpTarget.slice(4)), src, name);
@@ -2553,7 +2559,8 @@
 
   /* 申請・学習：表示形式（正方形アイコン／横長） */
   function applyAppsLayout(v) {
-    document.querySelectorAll('#panel-apply, #panel-learn').forEach(el => el.classList.toggle('wide', v === 'wide'));
+    APPS.wide = v === 'wide';
+    $('appsGrid').classList.toggle('wide', APPS.wide);
   }
   function openAppsPane(wp) {
     document.querySelectorAll('.wp.selected').forEach(el => el.classList.remove('selected'));
@@ -2562,7 +2569,8 @@
     pane.dataset.plain = 'false';
     pane.dataset.index = '';
     paneTitle.textContent = '申請・学習の表示形式';
-    const cur = document.querySelector('#panel-apply').classList.contains('wide') ? 'wide' : 'square';
+    const cur = APPS.wide ? 'wide' : 'square';
+    renderAppEditor();
     document.querySelector('input[name="ap-layout"][value="' + cur + '"]').checked = true;
     pane.classList.add('open');
     pane.setAttribute('aria-hidden', 'false');
@@ -2612,6 +2620,143 @@
     e.stopPropagation();
     openNewsPane($('newsWp'));
   });
+
+  /* 申請・学習：タブとアプリ（アイコン・表示名）を編集できるように */
+  const LOGO_NAMES = ['CYBER XEED', 'HR Brain', 'Bill One', 'OBiC7', 'V Air', '経費使用承認書'];
+  const LOGO_COLORS = ['#1a6fc4', '#1f9d55', '#1d3f7a', '#e0601a', '#1a6fc4', '#1a6fc4'];
+  const LOGO_LINES = [['CYBER', 'XEED'], ['HR', 'Brain'], ['Bill', 'One'], ['OBiC7'], ['V Air'], ['経費使用', '承認書']];
+  function makeLogoImage(k) {
+    const cv = document.createElement('canvas');
+    cv.width = 240;
+    cv.height = 240;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, 240, 240);
+    g.strokeStyle = LOGO_COLORS[k - 1];
+    g.lineWidth = 12;
+    g.strokeRect(10, 10, 220, 220);
+    g.fillStyle = LOGO_COLORS[k - 1];
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = 'bold 32px sans-serif';
+    const lines = LOGO_LINES[k - 1];
+    const top = 120 - (lines.length - 1) * 22;
+    lines.forEach((ln, idx) => g.fillText(ln, 120, top + idx * 44));
+    return cv.toDataURL('image/png');
+  }
+  const APPS = {
+    active: 0,
+    wide: false,
+    tabs: [
+      { name: '申請', items: [
+        { label: 'CYBER XEED', icon: { html: '<svg width="36" height="36" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 2 L24 8 L24 20 L14 26 L4 20 L4 8 Z" fill="none" stroke="#1a6fc4" stroke-width="4" stroke-linejoin="round"/></svg>' } },
+        { label: 'HR Brain', icon: { html: '<span class="pill-logo" style="background:#1f9d55">HR</span>' } },
+        { label: 'Bill One', icon: { html: '<span class="word-logo" style="color:#1d3f7a">Bill One</span>' } },
+        { label: 'OBiC7', icon: { html: '<span class="word-logo" style="color:#e0601a;font-style:italic;font-size:17px">OBiC7</span>' } },
+        { label: 'V Air', icon: { html: '<span class="word-logo" style="color:#1a6fc4;font-size:17px">Air</span>' } },
+        { label: '経費使用承認書', icon: { html: '<span class="blue-tile">経費使用<br>承認書</span>' } }
+      ] },
+      { name: '学習', items: [
+        { label: '東基単語集', icon: { html: '<span class="red-tile">TOKI<br>WORDS<br>COLLECTION</span>' } },
+        { label: 'ビジネス用語', icon: { html: '<span class="blue-tile2">ビジネス<br>用語集</span>' } },
+        { label: 'LEARNING...', icon: { html: '<span class="globe"></span>' } }
+      ] }
+    ]
+  };
+  function appIconHtml(it) {
+    if (it.icon && it.icon.img) return '<img src="' + it.icon.img + '" alt="">';
+    if (it.icon && it.icon.html) return it.icon.html;
+    return '<span class="ic-empty">＋</span>';
+  }
+  function renderApps() {
+    $('appTabs').innerHTML = APPS.tabs.map((t, k) =>
+      '<button class="tab' + (k === APPS.active ? ' active' : '') + '" type="button" role="tab" data-k="' + k + '">' + bizEsc(t.name) + '</button>'
+    ).join('');
+    const cur = APPS.tabs[APPS.active] || APPS.tabs[0];
+    $('appsGrid').innerHTML = cur.items.map(it =>
+      '<div class="app"><div class="ic">' + appIconHtml(it) + '</div>' + bizEsc(it.label) + '</div>'
+    ).join('');
+    $('appsGrid').classList.toggle('wide', APPS.wide);
+  }
+  function renderAppEditor() {
+    const t = APPS.tabs;
+    $('appEditor').innerHTML =
+      t.map((tab, k) =>
+        '<div class="field biz-item">' +
+          '<div class="biz-head-row"><span class="biz-label">タブ ' + (k + 1) + '</span><span class="biz-actions">' +
+            '<button class="biz-act biz-red" type="button" data-act="tdel" data-t="' + k + '"' + (t.length <= 1 ? ' disabled' : '') + '>このタブを削除</button>' +
+          '</span></div>' +
+          '<label>表示名</label>' +
+          '<input type="text" data-t="' + k + '" data-k="name" value="' + bizEsc(tab.name) + '">' +
+          '<label style="margin-top:12px;">アプリ</label>' +
+          tab.items.map((it, i) =>
+            '<div class="app-row">' +
+              '<div class="ic-mini">' + appIconHtml(it) + '</div>' +
+              '<input type="text" data-t="' + k + '" data-i="' + i + '" data-k="label" value="' + bizEsc(it.label) + '">' +
+              '<button class="img-change" type="button" data-pickapp="' + k + ':' + i + '">アイコン</button>' +
+              '<button class="biz-act biz-red" type="button" data-act="idel" data-t="' + k + '" data-i="' + i + '">削除</button>' +
+            '</div>'
+          ).join('') +
+          '<div class="field"><button class="fp-btn sg-add" type="button" data-act="iadd" data-t="' + k + '">アプリを追加</button></div>' +
+        '</div>'
+      ).join('') +
+      '<div class="field"><button class="fp-btn sg-add" id="appTabAdd" type="button">タブを追加</button></div>';
+  }
+  function changedApps() {
+    renderApps();
+    renderAppEditor();
+  }
+  function applyAppIcon(t, i, src, name) {
+    APPS.tabs[t].items[i].icon = { img: src };
+    changedApps();
+  }
+  $('appTabs').addEventListener('click', e => {
+    const b = e.target.closest('.tab');
+    if (!b) return;
+    APPS.active = Number(b.dataset.k);
+    renderApps();
+  });
+  $('appEditor').addEventListener('click', e => {
+    const pick = e.target.closest('[data-pickapp]');
+    if (pick) {
+      openFilePicker('app:' + pick.dataset.pickapp);
+      return;
+    }
+    if (e.target.id === 'appTabAdd') {
+      APPS.tabs.push({ name: '新しいタブ', items: [] });
+      APPS.active = APPS.tabs.length - 1;
+      changedApps();
+      return;
+    }
+    const act = e.target.closest('[data-act]');
+    if (!act || act.disabled) return;
+    const t = Number(act.dataset.t);
+    if (act.dataset.act === 'tdel') {
+      if (APPS.tabs.length <= 1) return;
+      APPS.tabs.splice(t, 1);
+      APPS.active = Math.max(0, Math.min(APPS.active, APPS.tabs.length - 1));
+    } else if (act.dataset.act === 'iadd') {
+      APPS.tabs[t].items.push({ label: '新しいアプリ' });
+    } else if (act.dataset.act === 'idel') {
+      APPS.tabs[t].items.splice(Number(act.dataset.i), 1);
+    }
+    changedApps();
+  });
+  $('appEditor').addEventListener('input', e => {
+    const el = e.target;
+    if (el.dataset.t === undefined) return;
+    const k = Number(el.dataset.t);
+    if (el.dataset.k === 'name') {
+      APPS.tabs[k].name = el.value;
+    } else if (el.dataset.k === 'label') {
+      APPS.tabs[k].items[Number(el.dataset.i)].label = el.value;
+    } else {
+      return;
+    }
+    renderApps();
+  });
+  renderApps();
+  renderAppEditor();
 
   /* 3件を並べる */
   for (let i = 0; i < 3; i++) {
