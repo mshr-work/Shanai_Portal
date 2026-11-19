@@ -551,9 +551,13 @@
   .sched-head { background: #333; color: #fff; text-align: center; font-weight: bold; font-size: 14px; padding: 6px 0; }
   .sched-plus { position: absolute; right: 8px; top: 34px; border: 0; background: none; color: #0f8a4b; font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer; padding: 0 4px; }
   .sched-list { padding: 8px 44px 10px 14px; }
+  .sched-group { display: flex; gap: 10px; }
+  .sched-tag { writing-mode: vertical-rl; text-align: center; font-size: 13px; font-weight: 700; color: #222; background: #eee; border-radius: 4px; padding: 8px 4px; letter-spacing: .2em; align-self: stretch; }
+  .sched-items { flex: 1; min-width: 0; }
   .sched-item { padding: 6px 0; font-size: 16px; font-weight: 700; color: #222; }
   .sched-name { color: #1565c0; margin-left: 14px; margin-top: 2px; }
-  .sched-sep { border-top: 1px dashed #777; margin: 6px 0; }
+  .sched-sep { position: relative; border-top: 1px dashed #777; margin: 14px -15px 14px 15px; }
+  .sched-sep span { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); background: #fff; padding: 0 10px; font-size: 12px; font-weight: 700; color: #666; white-space: nowrap; }
   /* 予定の登録画面 */
   .sf-form { background: #fff; color: #222; width: min(560px, calc(100% - 24px)); border-radius: 12px; padding: 18px 22px 22px; font-size: 14px; }
   .sf-top { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 14px; }
@@ -569,6 +573,21 @@
   .sf-chk { font-size: 13px; display: flex; align-items: center; gap: 4px; }
   .sf-memo { align-items: flex-start; }
   .sf-memo textarea { flex: 1; min-height: 120px; border: 1px solid #666; border-radius: 2px; padding: 8px; font: inherit; }
+  /* 予定の詳細 */
+  .sched-name { cursor: pointer; }
+  .sched-name:hover { text-decoration: underline; }
+  .sd-box { background: #fff; color: #222; width: min(480px, calc(100% - 24px)); border-radius: 8px; overflow: hidden; font-size: 14px; }
+  .sd-actions { display: flex; align-items: center; gap: 18px; padding: 14px 18px; }
+  .sd-link { background: none; border: 0; padding: 0; color: #0a64b8; font: inherit; cursor: pointer; }
+  .sd-link:hover { text-decoration: underline; }
+  .sd-u { text-decoration: underline; }
+  .sd-x { margin-left: auto; background: none; border: 0; font-size: 22px; color: #444; cursor: pointer; line-height: 1; }
+  .sd-meta { background: #f3f3f3; padding: 9px 18px; font-size: 13px; color: #333; }
+  .sd-body { padding: 18px 22px 22px; }
+  .sd-title { font-size: 22px; font-weight: bold; margin: 0 0 14px; padding-bottom: 12px; border-bottom: 1px solid #ddd; }
+  .sd-row { display: flex; gap: 22px; padding: 8px 0; }
+  .sd-row[hidden] { display: none; }
+  .sd-row > span:first-child { width: 110px; text-align: right; color: #333; flex-shrink: 0; }
   .scroll .thumb-bar { position: absolute; top: 0; left: 0; width: 6px; height: 150px; background: #aaa; border-radius: 3px; }
 
   /* ポップアップ */
@@ -1239,6 +1258,27 @@
       <div class="sf-row"><label>日付</label><input type="date" id="sfDate" value="2026-11-19"><label class="sf-chk"><input type="checkbox" id="sfAllDay"> 終日</label><label class="sf-chk"><input type="checkbox" id="sfStartOnly"> 開始のみ</label></div>
       <div class="sf-row"><label>時刻</label><select id="sfSh"></select>：<select id="sfSm"></select>　〜　<select id="sfEh"></select>：<select id="sfEm"></select></div>
       <div class="sf-row sf-memo"><label>メモ</label><textarea id="sfMemo"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 予定の詳細（青い予定名をクリックで開く） -->
+  <div class="modal" id="schedDetailModal" role="dialog" aria-modal="true" aria-label="予定の詳細">
+    <div class="sd-box">
+      <div class="sd-actions">
+        <button class="sd-link" type="button" data-do="edit">変更する</button>
+        <button class="sd-link" type="button" data-do="delete">削除する</button>
+        <button class="sd-link" type="button" data-do="reuse">再利用する</button>
+        <button class="sd-link sd-u" type="button" data-do="close">スケジュール表示</button>
+        <button class="sd-x" type="button" data-do="close" aria-label="閉じる">×</button>
+      </div>
+      <div class="sd-meta" id="sdReg"></div>
+      <div class="sd-body">
+        <h3 class="sd-title" id="sdTitle"></h3>
+        <div class="sd-row"><span>日時</span><span id="sdWhen"></span></div>
+        <div class="sd-row"><span id="sdLabel">参加者(1名)</span><span id="sdPeople"></span></div>
+        <div class="sd-row"><span>施設</span><span>なし</span></div>
+        <div class="sd-row" id="sdMemoRow" hidden><span>メモ</span><span id="sdMemo"></span></div>
+      </div>
     </div>
   </div>
 
@@ -2884,20 +2924,39 @@
     bizWipModal.classList.add('open');
   });
 
-  /* 今日の予定（＋で予定を登録） */
+  /* 今日の予定（＋で登録・青い予定名で詳細） */
+  const WD = ['日', '月', '火', '水', '木', '金', '土'];
+  const REG_INFO = '2026/11/19(木) 17:18';
   const SCHED = { items: [
-    { s: '09:00', e: '10:00', t: '社内ポータル打合せ' },
-    { s: '11:00', e: '12:00', t: '資料作成', sep: true },
-    { s: '14:30', e: '15:00', t: 'AI関連ウェビナー' },
-    { s: '17:00', e: '17:30', t: '1 on 1 MTG' }
+    { s: '09:00', e: '10:00', t: '社内ポータル打合せ', dt: '2026-12-01', p: '植木　優裕', m: '' },
+    { s: '11:00', e: '12:00', t: '資料作成', dt: '2026-12-01', p: '植木　優裕', m: '', sep: true },
+    { s: '14:30', e: '15:00', t: 'AI関連ウェビナー', dt: '2026-12-01', p: '植木　優裕', m: '' },
+    { s: '17:00', e: '17:30', t: '1 on 1 MTG', dt: '2026-12-01', p: '植木　優裕', m: '' }
   ] };
+  let schedEditIdx = null;
+  let schedDetailIdx = null;
+  function fmtDate(iso) {
+    const d = new Date(iso + 'T00:00:00');
+    return iso.replace(/-/g, '/') + '(' + WD[d.getDay()] + ')';
+  }
+  function schedName(it) {
+    return (it.k && it.k !== '--' ? '[' + it.k + '] ' : '') + it.t;
+  }
   function renderSched() {
-    $('schedList').innerHTML = SCHED.items.map(it =>
-      '<div class="sched-item"><div class="sched-time">' + bizEsc(it.s) + (it.e ? '〜' + bizEsc(it.e) : '') + '</div>' +
-      '<div class="sched-name">' + bizEsc(it.t) + '</div></div>' + (it.sep ? '<div class="sched-sep"></div>' : '')
-    ).join('');
+    const itemHtml = (it, i) => '<div class="sched-item" data-i="' + i + '"><div class="sched-time">' + bizEsc(it.s) + (it.e ? '〜' + bizEsc(it.e) : '') + '</div>' +
+      '<div class="sched-name">' + bizEsc(schedName(it)) + '</div></div>';
+    const am = [];
+    const pm = [];
+    SCHED.items.forEach((it, i) => ((it.s === '終日' || it.s < '12:00') ? am : pm).push(itemHtml(it, i)));
+    const group = (tag, arr) => arr.length
+      ? '<div class="sched-group"><div class="sched-tag">' + tag + '</div><div class="sched-items">' + arr.join('') + '</div></div>'
+      : '';
+    $('schedList').innerHTML = group('午前', am) +
+      (am.length && pm.length ? '<div class="sched-sep"></div>' : '') +
+      group('午後', pm);
   }
   const schedModal = $('schedModal');
+  const schedDetail = $('schedDetailModal');
   const pad2 = n => String(n).padStart(2, '0');
   function syncTimeEnabled() {
     const allDay = $('sfAllDay').checked;
@@ -2907,26 +2966,44 @@
     $('sfEh').disabled = allDay || startOnly;
     $('sfEm').disabled = allDay || startOnly;
   }
-  function openSched() {
-    $('sfTitle').value = '';
-    $('sfMemo').value = '';
-    $('sfKind').value = '--';
-    $('sfAllDay').checked = false;
-    $('sfStartOnly').checked = false;
+  function openSched(item, editIdx) {
+    schedEditIdx = editIdx === undefined ? null : editIdx;
+    $('sfTitle').value = item ? item.t : '';
+    $('sfMemo').value = item && item.m ? item.m : '';
+    $('sfKind').value = item && item.k ? item.k : '--';
+    $('sfDate').value = item && item.dt ? item.dt : '2026-11-19';
+    $('sfAllDay').checked = !!(item && item.s === '終日');
+    $('sfStartOnly').checked = !!(item && item.s !== '終日' && !item.e);
     const hrs = Array.from({ length: 24 }, (_, i) => '<option>' + pad2(i) + '</option>').join('');
     const mns = Array.from({ length: 12 }, (_, i) => '<option>' + pad2(i * 5) + '</option>').join('');
     $('sfSh').innerHTML = hrs;
     $('sfEh').innerHTML = hrs;
     $('sfSm').innerHTML = mns;
     $('sfEm').innerHTML = mns;
-    $('sfSh').value = '09';
-    $('sfSm').value = '00';
-    $('sfEh').value = '10';
-    $('sfEm').value = '00';
+    const st = item && item.s !== '終日' ? item.s.split(':') : ['09', '00'];
+    const en = item && item.e ? item.e.split(':') : ['10', '00'];
+    $('sfSh').value = st[0];
+    $('sfSm').value = st[1];
+    $('sfEh').value = en[0];
+    $('sfEm').value = en[1];
     syncTimeEnabled();
     schedModal.classList.add('open');
   }
-  $('schedPlus').addEventListener('click', openSched);
+  function openSchedDetail(i) {
+    schedDetailIdx = i;
+    const it = SCHED.items[i];
+    const people = it.p || '';
+    const count = people ? people.split(/[、,　]+/).filter(Boolean).length : 0;
+    $('sdReg').textContent = '登録情報：　植木　優裕　' + REG_INFO;
+    $('sdTitle').textContent = schedName(it);
+    $('sdWhen').textContent = fmtDate(it.dt || '2026-12-01') + ' ' + (it.s === '終日' ? '終日' : it.s + (it.e ? '〜' + it.e : ''));
+    $('sdLabel').textContent = '参加者(' + count + '名)';
+    $('sdPeople').textContent = people;
+    $('sdMemo').textContent = it.m || '';
+    $('sdMemoRow').hidden = !it.m;
+    schedDetail.classList.add('open');
+  }
+  $('schedPlus').addEventListener('click', () => openSched(null));
   $('sfAllDay').addEventListener('change', syncTimeEnabled);
   $('sfStartOnly').addEventListener('change', syncTimeEnabled);
   $('sfClose').addEventListener('click', () => closeModal(schedModal));
@@ -2937,13 +3014,51 @@
     const kind = $('sfKind').value;
     const allDay = $('sfAllDay').checked;
     const startOnly = $('sfStartOnly').checked;
-    const s = allDay ? '終日' : $('sfSh').value + ':' + $('sfSm').value;
-    const e = (allDay || startOnly) ? '' : $('sfEh').value + ':' + $('sfEm').value;
-    SCHED.items.push({ s, e, t: (kind !== '--' ? '[' + kind + '] ' : '') + title });
-    const key = it => (it.s === '終日' ? '' : it.s);
+    const it = {
+      s: allDay ? '終日' : $('sfSh').value + ':' + $('sfSm').value,
+      e: (allDay || startOnly) ? '' : $('sfEh').value + ':' + $('sfEm').value,
+      t: title,
+      k: kind !== '--' ? kind : '',
+      dt: $('sfDate').value,
+      p: '植木　優裕',
+      m: $('sfMemo').value.trim()
+    };
+    if (schedEditIdx !== null) {
+      it.sep = SCHED.items[schedEditIdx].sep;
+      SCHED.items[schedEditIdx] = it;
+    } else {
+      SCHED.items.push(it);
+    }
+    schedEditIdx = null;
+    const key = x => (x.s === '終日' ? '' : x.s);
     SCHED.items.sort((a, b) => key(a).localeCompare(key(b)));
     renderSched();
     closeModal(schedModal);
+  });
+  $('schedList').addEventListener('click', e => {
+    const nm = e.target.closest('.sched-name');
+    if (!nm) return;
+    openSchedDetail(Number(nm.parentElement.dataset.i));
+  });
+  schedDetail.addEventListener('click', e => {
+    if (e.target === schedDetail) { closeModal(schedDetail); return; }
+    const b = e.target.closest('[data-do]');
+    if (!b) return;
+    const act = b.dataset.do;
+    const idx = schedDetailIdx;
+    if (act === 'close') {
+      closeModal(schedDetail);
+    } else if (act === 'edit') {
+      closeModal(schedDetail);
+      openSched(SCHED.items[idx], idx);
+    } else if (act === 'reuse') {
+      closeModal(schedDetail);
+      openSched(SCHED.items[idx], null);
+    } else if (act === 'delete') {
+      SCHED.items.splice(idx, 1);
+      renderSched();
+      closeModal(schedDetail);
+    }
   });
   renderSched();
 
