@@ -31,7 +31,7 @@
   /* レイアウト */
   .layout { display: flex; flex-wrap: wrap; gap: 24px; padding: 24px 120px; }
   .main { flex: 1 1 520px; min-width: 0; }
-  .side { width: 370px; max-width: 100%; flex: 0 1 370px; margin-top: 16px; }
+  .side { width: 370px; max-width: 100%; flex: 0 1 370px; margin-top: -6px; }
 
   /* 挨拶バナー */
 
@@ -523,7 +523,7 @@
     .main, .side { display: contents; }
     .greeting-wp { order: 1; }
     .row { order: 2; }
-    .tabs, .apps-wrap { order: 3; }
+    .sched, .tabs, .apps-wrap { order: 3; }
     .news { order: 4; }
     .tips { order: 5; }
     .ai-corner { order: 6; }
@@ -544,6 +544,31 @@
   #bizWipModal.open .wip-ok { animation: wipFade .5s ease both; }
   #bizWipModal.closing { opacity: 0; transition: opacity .3s ease; }
   #bizWipModal.closing .wip-pop { animation: wipOut .3s ease-in both; }
+  /* 今日の予定 */
+  .sched { margin-bottom: 18px; }
+  .sched-title { font-size: 17px; line-height: 1.5; font-weight: bold; margin-bottom: 6px; color: #222; }
+  .sched-card { position: relative; border: 2px solid #222; border-radius: 14px; overflow: hidden; background: #fff; }
+  .sched-head { background: #333; color: #fff; text-align: center; font-weight: bold; font-size: 14px; padding: 6px 0; }
+  .sched-plus { position: absolute; right: 8px; top: 34px; border: 0; background: none; color: #0f8a4b; font-size: 28px; font-weight: bold; line-height: 1; cursor: pointer; padding: 0 4px; }
+  .sched-list { padding: 8px 44px 10px 14px; }
+  .sched-item { padding: 6px 0; font-size: 16px; font-weight: 700; color: #222; }
+  .sched-name { color: #1565c0; margin-left: 14px; margin-top: 2px; }
+  .sched-sep { border-top: 1px dashed #777; margin: 6px 0; }
+  /* 予定の登録画面 */
+  .sf-form { background: #fff; color: #222; width: min(560px, calc(100% - 24px)); border-radius: 12px; padding: 18px 22px 22px; font-size: 14px; }
+  .sf-top { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 14px; }
+  .sf-save { background: #0a64b8; color: #fff; border: 0; border-radius: 4px; padding: 8px 26px; font: inherit; font-weight: bold; cursor: pointer; }
+  .sf-close { position: absolute; right: 0; top: 0; background: #fff; color: #222; border: 1px solid #666; border-radius: 4px; padding: 7px 16px; font: inherit; cursor: pointer; }
+  .sf-tabs { display: flex; gap: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; font-size: 13px; color: #444; }
+  .sf-tabs span.on { font-weight: bold; color: #222; border-bottom: 2px solid #222; padding-bottom: 6px; margin-bottom: -9px; }
+  .sf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sf-row > label:first-child { width: 44px; font-weight: bold; }
+  .sf-row input[type="text"], .sf-row input[type="date"], .sf-row select { border: 1px solid #666; border-radius: 2px; padding: 6px 8px; font: inherit; background: #fff; color: #222; }
+  .sf-row input[type="text"] { flex: 1; min-width: 180px; }
+  .sf-row select:disabled, .sf-row input:disabled { background: #eee; color: #999; }
+  .sf-chk { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+  .sf-memo { align-items: flex-start; }
+  .sf-memo textarea { flex: 1; min-height: 120px; border: 1px solid #666; border-radius: 2px; padding: 8px; font: inherit; }
   .scroll .thumb-bar { position: absolute; top: 0; left: 0; width: 6px; height: 150px; background: #aaa; border-radius: 3px; }
 
   /* ポップアップ */
@@ -867,6 +892,14 @@
     </div>
 
     <aside class="side">
+      <div class="sched" id="schedBox">
+        <div class="sched-title">今日の予定</div>
+        <div class="sched-card">
+          <div class="sched-head">12月1日（火）</div>
+          <button class="sched-plus" id="schedPlus" type="button" aria-label="予定を追加">+</button>
+          <div class="sched-list" id="schedList"></div>
+        </div>
+      </div>
       <div class="tabs" id="appTabs" role="tablist"></div>
       <div class="apps-wrap wp" id="appsWp">
         <button class="wp-edit" type="button" aria-label="申請・学習を編集"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>
@@ -1191,6 +1224,21 @@
         <p class="wip-text">業界お役立ちニュースは<br>現在準備中です。<br>公開までしばらくお待ちください！</p>
       </div>
       <button class="wip-ok" id="bizWipOk" type="button" aria-label="閉じる">×</button>
+    </div>
+  </div>
+
+  <!-- 予定の登録（＋から開く） -->
+  <div class="modal" id="schedModal" role="dialog" aria-modal="true" aria-label="予定の登録">
+    <div class="sf-form">
+      <div class="sf-top">
+        <button class="sf-save" id="sfSave" type="button">登録する</button>
+        <button class="sf-close" id="sfClose" type="button">閉じる</button>
+      </div>
+      <div class="sf-tabs"><span class="on">通常予定</span><span>翌日以降まで続く予定</span><span>期間予定</span><span>繰り返し予定</span></div>
+      <div class="sf-row"><label>予定</label><select id="sfKind"><option>--</option><option>会議</option><option>作業</option><option>外出</option><option>来客</option></select><input type="text" id="sfTitle" placeholder="予定名"></div>
+      <div class="sf-row"><label>日付</label><input type="date" id="sfDate" value="2026-11-19"><label class="sf-chk"><input type="checkbox" id="sfAllDay"> 終日</label><label class="sf-chk"><input type="checkbox" id="sfStartOnly"> 開始のみ</label></div>
+      <div class="sf-row"><label>時刻</label><select id="sfSh"></select>：<select id="sfSm"></select>　〜　<select id="sfEh"></select>：<select id="sfEm"></select></div>
+      <div class="sf-row sf-memo"><label>メモ</label><textarea id="sfMemo"></textarea></div>
     </div>
   </div>
 
@@ -2835,6 +2883,69 @@
     if (!state.biz.wip) return;
     bizWipModal.classList.add('open');
   });
+
+  /* 今日の予定（＋で予定を登録） */
+  const SCHED = { items: [
+    { s: '09:00', e: '10:00', t: '社内ポータル打合せ' },
+    { s: '11:00', e: '12:00', t: '資料作成', sep: true },
+    { s: '14:30', e: '15:00', t: 'AI関連ウェビナー' },
+    { s: '17:00', e: '17:30', t: '1 on 1 MTG' }
+  ] };
+  function renderSched() {
+    $('schedList').innerHTML = SCHED.items.map(it =>
+      '<div class="sched-item"><div class="sched-time">' + bizEsc(it.s) + (it.e ? '〜' + bizEsc(it.e) : '') + '</div>' +
+      '<div class="sched-name">' + bizEsc(it.t) + '</div></div>' + (it.sep ? '<div class="sched-sep"></div>' : '')
+    ).join('');
+  }
+  const schedModal = $('schedModal');
+  const pad2 = n => String(n).padStart(2, '0');
+  function syncTimeEnabled() {
+    const allDay = $('sfAllDay').checked;
+    const startOnly = $('sfStartOnly').checked;
+    $('sfSh').disabled = allDay;
+    $('sfSm').disabled = allDay;
+    $('sfEh').disabled = allDay || startOnly;
+    $('sfEm').disabled = allDay || startOnly;
+  }
+  function openSched() {
+    $('sfTitle').value = '';
+    $('sfMemo').value = '';
+    $('sfKind').value = '--';
+    $('sfAllDay').checked = false;
+    $('sfStartOnly').checked = false;
+    const hrs = Array.from({ length: 24 }, (_, i) => '<option>' + pad2(i) + '</option>').join('');
+    const mns = Array.from({ length: 12 }, (_, i) => '<option>' + pad2(i * 5) + '</option>').join('');
+    $('sfSh').innerHTML = hrs;
+    $('sfEh').innerHTML = hrs;
+    $('sfSm').innerHTML = mns;
+    $('sfEm').innerHTML = mns;
+    $('sfSh').value = '09';
+    $('sfSm').value = '00';
+    $('sfEh').value = '10';
+    $('sfEm').value = '00';
+    syncTimeEnabled();
+    schedModal.classList.add('open');
+  }
+  $('schedPlus').addEventListener('click', openSched);
+  $('sfAllDay').addEventListener('change', syncTimeEnabled);
+  $('sfStartOnly').addEventListener('change', syncTimeEnabled);
+  $('sfClose').addEventListener('click', () => closeModal(schedModal));
+  schedModal.addEventListener('click', e => { if (e.target === schedModal) closeModal(schedModal); });
+  $('sfSave').addEventListener('click', () => {
+    const title = $('sfTitle').value.trim();
+    if (!title) { $('sfTitle').focus(); return; }
+    const kind = $('sfKind').value;
+    const allDay = $('sfAllDay').checked;
+    const startOnly = $('sfStartOnly').checked;
+    const s = allDay ? '終日' : $('sfSh').value + ':' + $('sfSm').value;
+    const e = (allDay || startOnly) ? '' : $('sfEh').value + ':' + $('sfEm').value;
+    SCHED.items.push({ s, e, t: (kind !== '--' ? '[' + kind + '] ' : '') + title });
+    const key = it => (it.s === '終日' ? '' : it.s);
+    SCHED.items.sort((a, b) => key(a).localeCompare(key(b)));
+    renderSched();
+    closeModal(schedModal);
+  });
+  renderSched();
 
   /* 3件を並べる */
   for (let i = 0; i < 3; i++) {
